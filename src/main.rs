@@ -1,36 +1,66 @@
 use crossterm::{
-    terminal::{Clear, ClearType, EnterAlternateScreen, SetSize},
-    ExecutableCommand,
+    cursor, execute,
+    style::{Print, ResetColor},
+    terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, SetSize},
 };
-use std::{io::Result, net::IpAddr, sync::mpsc};
+use std::{io, sync::mpsc};
 
 mod ip;
 
 const TERMINAL_WIDTH: u16 = 75;
 const TERMINAL_HEIGHT: u16 = 9;
 
-fn cls(stdout: &mut std::io::Stdout) -> Result<&mut std::io::Stdout> {
-    stdout.execute(Clear(ClearType::All))
-}
+const SQUARE: &str = concat!(
+    "                                                                           ",
+    "     ┌───────────────────────────────────────────────────────────────┐     ",
+    "     │                                                               │     ",
+    "     │                                                               │     ",
+    "     │                                                               │     ",
+    "     │                                                               │     ",
+    "     │                                                               │     ",
+    "     └───────────────────────────────────────────────────────────────┘     ",
+    "                                                                           "
+);
 
-fn main() -> Result<()> {
+const SIGINT_HANDLER: fn() = || {
     // Get stdout
-    let mut stdout = std::io::stdout();
+    let mut stdout = io::stdout();
+
+    // Reset the screen, ignoring any errors
+    let _ = execute! {
+        stdout,
+        ResetColor,
+        LeaveAlternateScreen,
+        cursor::Show
+    };
+
+    // Terminate the program
+    std::process::exit(0);
+};
+
+fn main() -> io::Result<()> {
+    // Get stdout
+    let mut stdout = io::stdout();
 
     // Create an asynchronous channel for updates
-    let (tx, rx) = mpsc::channel::<IpAddr>();
+    let (tx, rx) = mpsc::channel();
 
     // Spawn a background task to update the channel
     ip::spawn_get_ip_task(tx);
 
     // Setup screen
-    stdout
-        .execute(SetSize(TERMINAL_WIDTH, TERMINAL_HEIGHT))?
-        .execute(EnterAlternateScreen)?;
+    execute! {
+        stdout,
+        SetSize(TERMINAL_WIDTH, TERMINAL_HEIGHT),
+        EnterAlternateScreen,
+        cursor::Hide
+    }?;
 
+    // Set up the SIGINT handler
+    ctrlc::set_handler(SIGINT_HANDLER).expect("Error setting SIGINT handler");
+
+    // Recieve values from the channel
     for ip_addr in rx {
-        cls(&mut stdout)?;
-
         let ip_addr = ip_addr.to_string();
 
         // Calculate the position to print the line centered
@@ -38,9 +68,18 @@ fn main() -> Result<()> {
         let y = TERMINAL_HEIGHT / 2;
 
         // Set the cursor position to the middle and print the ip address
-        stdout
-            .execute(crossterm::cursor::MoveTo(x, y))?
-            .execute(crossterm::style::Print(ip_addr))?;
+        execute! {
+            stdout,
+            // cls
+            Clear(ClearType::All),
+            // Reset Cursor
+            cursor::MoveTo(0, 0),
+            // Print the SQUARE
+            Print(SQUARE),
+            // Cursor to middle
+            cursor::MoveTo(x, y),
+            Print(ip_addr),
+        }?;
     }
 
     Ok(())
