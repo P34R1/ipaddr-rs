@@ -2,7 +2,7 @@ pub const LINE_TO_PRINT: u16 = 19;
 
 // Ascii art from hjw:	Hayley Jane Wakenshaw (Flump)
 // Found on https://www.asciiart.eu/art-and-design/borders
-pub const BORDER: &[&str] = &["\x1B[33m",
+pub const BORDER: &str = concat!("\x1B[33m",
     r#"                                                                           "#,
     r#"                         ,---.           ,---.                             "#,
     r#"                        / /"`.\.--"""--./,'"\ \                            "#,
@@ -39,5 +39,5 @@ pub const BORDER: &[&str] = &["\x1B[33m",
     r"                     /            )  (            \                        ",
     r#"                     `==========='    `==========='  hjw                   "#,
     r#"                                                                           "#,
-]
+)
 ;

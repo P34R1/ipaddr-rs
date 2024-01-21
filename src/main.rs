@@ -64,7 +64,7 @@ fn main() -> io::Result<()> {
             // Reset Cursor
             cursor::MoveTo(0, 0),
             // Print the BORDER
-            Print(formatting::BORDER.concat()),
+            Print(formatting::BORDER),
             // Cursor to middle
             cursor::MoveTo(x, formatting::LINE_TO_PRINT),
             SetForegroundColor(Color::DarkBlue),
