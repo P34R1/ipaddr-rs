@@ -1,26 +1,15 @@
 use crossterm::{
     cursor, execute,
-    style::{Print, ResetColor},
+    style::{Attribute, Color, Print, ResetColor, SetAttribute, SetForegroundColor},
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, SetSize},
 };
 use std::{io, sync::mpsc};
 
+mod formatting;
 mod ip;
 
 const TERMINAL_WIDTH: u16 = 75;
-const TERMINAL_HEIGHT: u16 = 9;
-
-const SQUARE: &str = concat!(
-    "                                                                           ",
-    "     ┌───────────────────────────────────────────────────────────────┐     ",
-    "     │                                                               │     ",
-    "     │                                                               │     ",
-    "     │                                                               │     ",
-    "     │                                                               │     ",
-    "     │                                                               │     ",
-    "     └───────────────────────────────────────────────────────────────┘     ",
-    "                                                                           "
-);
+const TERMINAL_HEIGHT: u16 = 36;
 
 const SIGINT_HANDLER: fn() = || {
     // Get stdout
@@ -53,7 +42,8 @@ fn main() -> io::Result<()> {
         stdout,
         SetSize(TERMINAL_WIDTH, TERMINAL_HEIGHT),
         EnterAlternateScreen,
-        cursor::Hide
+        cursor::Hide,
+        SetAttribute(Attribute::Bold),
     }?;
 
     // Set up the SIGINT handler
@@ -65,7 +55,6 @@ fn main() -> io::Result<()> {
 
         // Calculate the position to print the line centered
         let x = (TERMINAL_WIDTH - ip_addr.len() as u16) / 2;
-        let y = TERMINAL_HEIGHT / 2;
 
         // Set the cursor position to the middle and print the ip address
         execute! {
@@ -74,10 +63,11 @@ fn main() -> io::Result<()> {
             Clear(ClearType::All),
             // Reset Cursor
             cursor::MoveTo(0, 0),
-            // Print the SQUARE
-            Print(SQUARE),
+            // Print the BORDER
+            Print(formatting::BORDER.concat()),
             // Cursor to middle
-            cursor::MoveTo(x, y),
+            cursor::MoveTo(x, formatting::LINE_TO_PRINT),
+            SetForegroundColor(Color::DarkBlue),
             Print(ip_addr),
         }?;
     }
