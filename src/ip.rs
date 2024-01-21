@@ -25,10 +25,10 @@ macro_rules! continue_if_err {
 
 fn get_public_ip() -> Result<IpAddr> {
     // Make a TCP connection to the ipify.org API
-    let mut stream = TcpStream::connect("api64.ipify.org:80")?;
+    let mut stream = TcpStream::connect("api.ipify.org:80")?;
 
     // Send an HTTP GET request
-    stream.write_all(b"GET / HTTP/1.1\r\nHost: api64.ipify.org\r\n\r\n")?;
+    stream.write_all(b"GET / HTTP/1.1\r\nHost: api.ipify.org\r\n\r\n")?;
 
     // Read the response
     let mut response = [0; BUFFER_LENGTH];
