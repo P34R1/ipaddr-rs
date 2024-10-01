@@ -5,14 +5,8 @@ use std::{
     thread,
     time::Duration,
 };
-
-//                     Wont Change        Might Change            Will Change (should be same count)     Wont Change                 Number Will Be 10-15  Wont Change               Wont Change
-const HEADERS: &str = "HTTP/1.1 200 OK\r\nServer: nginx/1.25.1\r\nDate: Sun, 21 Jan 2024 03:15:34 GMT\r\nContent-Type: text/plain\r\nContent-Length: 14\r\nConnection: keep-alive\r\nVary: Origin\r\n\r\n";
-const IP_START: usize = HEADERS.len();
-
-//                           225.225.225.225
-const IP_MAX_LENGTH: usize = 15;
-const BUFFER_LENGTH: usize = IP_START + IP_MAX_LENGTH;
+const BUFFER_LENGTH: usize = 250;
+const CRLF_OFFSET: usize = 4;
 
 macro_rules! continue_if_err {
     ($a:expr) => {
@@ -22,6 +16,14 @@ macro_rules! continue_if_err {
         }
     };
 }
+
+const FIND_IP_START: fn(&[u8]) -> usize = |response| {
+    std::str::from_utf8(response)
+        .expect("valid utf8")
+        .find("\r\n\r\n")
+        .expect("crlfcrlf to be in string")
+        + CRLF_OFFSET
+};
 
 fn get_public_ip() -> Result<IpAddr> {
     // Make a TCP connection to the ipify.org API
@@ -33,8 +35,9 @@ fn get_public_ip() -> Result<IpAddr> {
     // Read the response
     let mut response = [0; BUFFER_LENGTH];
     let ip_end = stream.read(&mut response)?;
+    let ip_start = FIND_IP_START(&response);
 
-    let response = String::from_utf8_lossy(&response[IP_START..ip_end]);
+    let response = String::from_utf8_lossy(&response[ip_start..ip_end]);
 
     response.parse().map_err(|_| {
         Error::new(
